@@ -1,0 +1,32 @@
+name: Build Combined Eevee + spoti.pw IPA
+
+on:
+  workflow_dispatch:
+    inputs:
+      ipa_url:
+        description: 'Direct link to decrypted Spotify IPA'
+        required: true
+        type: string
+      spotify_version:
+        description: 'Spotify version (for naming)'
+        required: false
+        default: '9.1.78'
+        type: string
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Placeholder - Dual mod builder
+        run: |
+          echo "Dual-mod builder coming next."
+          echo "IPA URL: ${{ inputs.ipa_url }}"
+          echo "This workflow will:"
+          echo "1. Download your decrypted Spotify IPA"
+          echo "2. Fetch latest EeveeSpotifyReincarnated"
+          echo "3. Fetch / build latest spoti.pw"
+          echo "4. Inject both cleanly with cyan"
+          echo "5. Upload the combined IPA as artifact"
