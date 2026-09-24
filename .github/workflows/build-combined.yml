@@ -14,24 +14,19 @@ env:
 jobs:
   build:
     runs-on: macos-latest
-
     steps:
-      - name: Checkout this repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Checkout official spoti.pw
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           repository: skopevoj/spoti.pw
           path: spotipw
 
-      - name: Setup Xcode
-        uses: maxim-lobanov/setup-xcode@v1
+      - uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: latest-stable
 
-      - name: Checkout Theos
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           repository: theos/theos
           path: theos
@@ -42,20 +37,16 @@ jobs:
           brew install make dpkg ldid
           python3 -m pip install --break-system-packages git+https://github.com/asdfzxcvbn/pyzule-rw.git
 
-      - name: Download Spotify IPA
+      - name: Download IPA
         run: |
           mkdir -p spotipw/ipa
           curl -fsSL "${{ inputs.ipa_url }}" -o spotipw/ipa/spotify.ipa
-          file spotipw/ipa/spotify.ipa
-          ls -lh spotipw/ipa/
 
-      - name: Build spoti.pw officially
+      - name: Build spoti.pw
         working-directory: spotipw
-        run: |
-          make release
-          ls -lh out/
+        run: make release
 
-      - name: Download latest Eevee
+      - name: Get Eevee
         run: |
           mkdir -p debs
           curl -sL https://api.github.com/repos/SideloadLabs/EeveeSpotifyReincarnated/releases/latest -o eevee.json
@@ -64,22 +55,17 @@ import json
 data = json.load(open("eevee.json"))
 for a in data["assets"]:
     if "iphoneos-arm64.deb" in a["name"]:
-        print(a["browser_download_url"])
         open("eevee_url.txt", "w").write(a["browser_download_url"])
         break
 '
           curl -L -o debs/eevee.deb "$(cat eevee_url.txt)"
-          ls -lh debs/
 
-      - name: Inject Eevee on top
+      - name: Inject Eevee
         run: |
           mkdir -p final
           cyan -i spotipw/out/*.ipa -o final/EeveeSpoti.ipa -f debs/eevee.deb -u -w
-          ls -lh final/
 
-      - name: Upload IPA
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: EeveeSpoti
           path: final/*.ipa
-          retention-days: 5
