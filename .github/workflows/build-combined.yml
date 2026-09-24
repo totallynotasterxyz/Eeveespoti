@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       ipa_url:
-        description: "Direct link to decrypted Spotify 9.1.78 IPA"
+        description: "Direct link to a decrypted Spotify IPA (use 9.1.78)"
         required: true
         type: string
 
@@ -44,24 +44,28 @@ jobs:
       - name: Download Spotify IPA
         run: |
           mkdir -p spotipw/ipa
+          echo "Downloading IPA from provided link..."
           curl -fsSL "${{ inputs.ipa_url }}" -o spotipw/ipa/spotify.ipa
           file spotipw/ipa/spotify.ipa
+          ls -lh spotipw/ipa/
 
-      - name: Build spoti.pw the official way
+      - name: Build spoti.pw the official way (make release)
         working-directory: spotipw
         run: |
           make release
+          echo "=== spoti.pw output ==="
           ls -lh out/
 
-      - name: Download latest Eevee
+      - name: Download latest EeveeSpotify
         run: |
           mkdir -p debs
-          curl -sL https://api.github.com/repos/SideloadLabs/EeveeSpotifyReincarnated/releases/latest -o eevee.json
+          curl -sL "https://api.github.com/repos/SideloadLabs/EeveeSpotifyReincarnated/releases/latest" -o eevee.json
           python3 -c '
 import json
 data = json.load(open("eevee.json"))
 for a in data["assets"]:
-    if a["name"].endswith("iphoneos-arm64.deb"):
+    if "iphoneos-arm64.deb" in a["name"]:
+        print("Found:", a["name"])
         print(a["browser_download_url"])
         open("eevee_url.txt", "w").write(a["browser_download_url"])
         break
@@ -69,13 +73,14 @@ for a in data["assets"]:
           curl -L -o debs/eevee.deb "$(cat eevee_url.txt)"
           ls -lh debs/
 
-      - name: Inject Eevee on top
+      - name: Inject Eevee on top of official spoti.pw IPA
         run: |
           mkdir -p final
           cyan -i spotipw/out/*.ipa -o final/EeveeSpoti.ipa -f debs/eevee.deb -u -w
+          echo "=== Final IPA ==="
           ls -lh final/
 
-      - name: Upload IPA
+      - name: Upload combined IPA
         uses: actions/upload-artifact@v4
         with:
           name: EeveeSpoti-LiquidGlass
