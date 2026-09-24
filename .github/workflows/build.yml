@@ -5,7 +5,7 @@ on:
 
 env:
   THEOS: ${{ github.workspace }}/theos
-  IPA_URL: "REPLACE_WITH_CATBOX_LINK"
+  IPA_URL: "https://files.catbox.moe/vqck7m.ipa"
 
 jobs:
   build:
@@ -38,6 +38,7 @@ jobs:
           mkdir -p spotipw/ipa
           curl -fsSL "$IPA_URL" -o spotipw/ipa/spotify.ipa
           file spotipw/ipa/spotify.ipa
+          ls -lh spotipw/ipa/
 
       - name: Build spoti.pw
         working-directory: spotipw
@@ -56,11 +57,13 @@ for a in data["assets"]:
         break
 '
           curl -L -o debs/eevee.deb "$(cat eevee_url.txt)"
+          ls -lh debs/
 
       - name: Inject Eevee
         run: |
           mkdir -p final
           cyan -i spotipw/out/*.ipa -o final/EeveeSpoti.ipa -f debs/eevee.deb -u -w
+          ls -lh final/
 
       - uses: actions/upload-artifact@v4
         with:
