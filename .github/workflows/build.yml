@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       ipa_url:
-        description: 'Direct link to decrypted Spotify IPA'
+        description: 'Direct link to a decrypted Spotify IPA'
         required: true
         type: string
       spotify_version:
-        description: 'Spotify version (for naming)'
+        description: 'Spotify version (used in output filename)'
         required: false
         default: '9.1.78'
         type: string
@@ -20,13 +20,51 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Placeholder - Dual mod builder
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install cyan
         run: |
-          echo "Dual-mod builder coming next."
-          echo "IPA URL: ${{ inputs.ipa_url }}"
-          echo "This workflow will:"
-          echo "1. Download your decrypted Spotify IPA"
-          echo "2. Fetch latest EeveeSpotifyReincarnated"
-          echo "3. Fetch / build latest spoti.pw"
-          echo "4. Inject both cleanly with cyan"
-          echo "5. Upload the combined IPA as artifact"
+          pip install "cyan @ git+https://github.com/asdfzxcvbn/pyzule-rw"
+
+      - name: Download decrypted Spotify IPA
+        run: |
+          mkdir -p ipa out
+          curl -L -o ipa/spotify.ipa "${{ inputs.ipa_url }}"
+          ls -lh ipa/
+
+      - name: Download latest EeveeSpotifyReincarnated
+        id: eevee
+        run: |
+          mkdir -p debs
+          # Get latest release assets
+          curl -sL https://api.github.com/repos/SideloadLabs/EeveeSpotifyReincarnated/releases/latest > eevee.json
+          EEVEE_DEB=$(jq -r '.assets[] | select(.name | test("iphoneos-arm64.deb$")) | .browser_download_url' eevee.json | head -1)
+          echo "Downloading Eevee: $EEVEE_DEB"
+          curl -L -o debs/eevee.deb "$EEVEE_DEB"
+          ls -lh debs/
+
+      - name: Download latest spoti.pw
+        run: |
+          curl -sL https://api.github.com/repos/skopevoj/spoti.pw/releases/latest > spotipw.json
+          SPOTIPW_DEB=$(jq -r '.assets[] | select(.name | endswith(".deb")) | .browser_download_url' spotipw.json | head -1)
+          echo "Downloading spoti.pw: $SPOTIPW_DEB"
+          curl -L -o debs/spotipw.deb "$SPOTIPW_DEB"
+          ls -lh debs/
+
+      - name: Inject both mods with cyan
+        run: |
+          cyan -i ipa/spotify.ipa \
+               -o "out/EeveeSpoti_${{ inputs.spotify_version }}.ipa" \
+               -f debs/eevee.deb debs/spotipw.deb \
+               -u -w
+          ls -lh out/
+
+      - name: Upload combined IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: EeveeSpoti-${{ inputs.spotify_version }}
+          path: out/*.ipa
+          retention-days: 7
