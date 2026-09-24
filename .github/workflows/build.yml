@@ -1,4 +1,4 @@
-name: Build Combined Eevee + spoti.pw IPA
+name: Build Combined Eevee + spoti.pw IPAs
 
 on:
   workflow_dispatch:
